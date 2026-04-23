@@ -1,10 +1,5 @@
-import type { Metadata } from "next";
-import { DashboardHome } from "@/components/dashboard/home";
-
-export const metadata: Metadata = {
-  title: "Home — Delix",
-};
+import { redirect } from "next/navigation";
 
 export default function DashboardPage() {
-  return <DashboardHome />;
+  redirect("/dashboard/chat");
 }

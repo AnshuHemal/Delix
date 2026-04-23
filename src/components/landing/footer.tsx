@@ -70,7 +70,7 @@ const fadeUp = {
 export function Footer() {
   return (
     <footer className="bg-background">
-      <div className="max-w-screen-xl mx-auto px-4 sm:px-6 lg:px-8 border-t border-border">
+      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 border-t border-border">
 
         {/* CTA section */}
         <motion.div

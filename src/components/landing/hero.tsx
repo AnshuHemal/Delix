@@ -2,7 +2,7 @@
 
 import { motion } from "framer-motion";
 import Link from "next/link";
-import { ArrowRight, Play, Video, MessageSquare, Calendar, Hash, Home, Users, Settings, Search, BarChart2, CheckSquare, FileText } from "lucide-react";
+import { ArrowRight, Play, Home, Users, Settings, Search, BarChart2, CheckSquare, FileText } from "lucide-react";
 import { Button } from "@/components/ui/button";
 
 const EASE: [number, number, number, number] = [0.22, 1, 0.36, 1];

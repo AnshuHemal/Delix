@@ -176,7 +176,7 @@ export function Navbar() {
             transition={{ duration: 0.3, ease: "easeOut" }}
             className="fixed top-0 left-0 right-0 z-50 bg-background border-b border-border"
           >
-            <div className="max-w-screen-xl mx-auto px-6 sm:px-8 lg:px-12 flex items-center justify-between h-16">
+            <div className="max-w-7xl mx-auto px-6 sm:px-8 lg:px-12 flex items-center justify-between h-16">
               {logo}
               <NavLinks activeDropdown={activeDropdown} setActiveDropdown={setActiveDropdown} />
               {ctaButtons()}

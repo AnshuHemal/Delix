@@ -5,7 +5,6 @@ import { Video, MessageSquare, Calendar, Users, ArrowRight, Clock } from "lucide
 import { Button } from "@/components/ui/button";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 import { useSession } from "@/lib/auth-client";
-import { cn } from "@/lib/utils";
 
 const quickActions = [
   { icon: Video, label: "New meeting", description: "Start instantly" },

@@ -18,7 +18,7 @@ export function ChatView() {
     <div className="flex h-full overflow-hidden">
 
       {/* Chat list */}
-      <div className="w-80 shrink-0 border-r border-border h-full overflow-hidden">
+      <div className="w-96 shrink-0 border-r border-border h-full overflow-hidden">
         <ChatList selected={selected} onSelect={setSelected} />
       </div>
 

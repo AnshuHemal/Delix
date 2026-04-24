@@ -16,6 +16,7 @@ import { cn } from "@/lib/utils";
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
 import { UserMenu } from "./user-menu";
 import { Zap } from "lucide-react";
+import { ThemeToggle } from "@/components/ui/theme-toggle";
 import type { FluentIcon } from "@fluentui/react-icons";
 
 const topNavItems: { icon: FluentIcon; iconFilled: FluentIcon; label: string; href: string; badge?: number }[] = [
@@ -112,7 +113,7 @@ export function DashboardShell({ children }: { children: React.ReactNode }) {
       <div className="flex h-screen bg-background overflow-hidden">
 
         {/* ── Sidebar ── */}
-        <nav className="flex flex-col items-center w-[68px] bg-[#f3f3f3] dark:bg-zinc-900 border-r border-border shrink-0 py-2">
+        <nav className="flex flex-col items-center w-20 bg-[#f3f3f3] dark:bg-zinc-900 border-r border-border shrink-0 py-2 overflow-visible">
 
           {/* Logo */}
           <Link href="/dashboard/chat" className="flex items-center justify-center mb-3">
@@ -130,6 +131,9 @@ export function DashboardShell({ children }: { children: React.ReactNode }) {
 
           {/* Bottom nav */}
           <div className="flex flex-col items-center w-full pb-1">
+            <div className="flex flex-col items-center gap-1 w-full mb-1">
+              <ThemeToggle />
+            </div>
             {bottomNavItems.map((item) => (
               <NavItem key={item.href} {...item} active={isActive(item.href)} />
             ))}

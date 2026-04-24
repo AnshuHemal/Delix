@@ -6,6 +6,7 @@ import { motion, AnimatePresence } from "framer-motion";
 import { Menu, X, Zap, ChevronDown } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
+import { ThemeToggle } from "@/components/ui/theme-toggle";
 
 const navLinks = [
   {
@@ -145,6 +146,7 @@ export function Navbar() {
 
   const ctaButtons = (pill?: boolean) => (
     <div className="hidden md:flex items-center gap-2 shrink-0">
+      <ThemeToggle />
       <Button
         variant="outline"
         size="sm"

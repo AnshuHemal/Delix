@@ -6,6 +6,7 @@ import { motion, AnimatePresence } from "framer-motion";
 import dynamic from "next/dynamic";
 import data from "@emoji-mart/data";
 import { init } from "emoji-mart";
+import { useTheme } from "next-themes";
 import {
   Video, Phone, Search, MoreHorizontal,
   Smile, Image as ImageIcon, Paperclip, AtSign, Plus, Send,
@@ -73,7 +74,7 @@ function TopBarAvatar({ chat }: { chat: Chat }) {
       )}
       <span className={cn(
         "absolute -bottom-0.5 -right-0.5 w-3 h-3 rounded-full ring-2 ring-background",
-        chat.online ? "bg-green-500" : "bg-zinc-400"
+        chat.online ? "bg-green-500" : "bg-muted-foreground"
       )} />
     </div>
   );
@@ -118,6 +119,7 @@ export function ConversationView({
   const [input, setInput] = useState("");
   const [messages, setMessages] = useState<Message[]>(mockMessages);
   const [showPicker, setShowPicker] = useState(false);
+  const { resolvedTheme } = useTheme();
   const bottomRef = useRef<HTMLDivElement>(null);
   const pickerRef = useRef<HTMLDivElement>(null);
   const smileRef = useRef<HTMLButtonElement>(null);
@@ -345,7 +347,7 @@ export function ConversationView({
                     onEmojiSelect={(emoji: { native: string }) => {
                       setInput((prev) => prev + emoji.native);
                     }}
-                    theme="light"
+                    theme={resolvedTheme === "dark" ? "dark" : "light"}
                     set="native"
                     previewPosition="none"
                     skinTonePosition="none"

@@ -67,7 +67,7 @@ function ChatRow({ chat, selected, onSelect }: { chat: Chat; selected: boolean; 
       onClick={() => onSelect(chat)}
       className={cn(
         "relative w-full flex items-center gap-3 px-4 py-2.5 text-left transition-colors duration-100",
-        selected ? "bg-accent" : "hover:bg-black/5"
+        selected ? "bg-accent" : "hover:bg-muted/50"
       )}
     >
       {/* Unread dot */}
@@ -156,7 +156,7 @@ export function ChatList({
   onSelect: (chat: Chat) => void;
 }) {
   return (
-    <div className="flex flex-col h-full bg-[#f3f3f3]">
+    <div className="flex flex-col h-full bg-sidebar">
       {/* Header */}
       <div className="flex items-center justify-between px-4 py-3 shrink-0">
         <button className="flex items-center gap-1 font-semibold text-foreground text-base hover:text-muted-foreground transition-colors">

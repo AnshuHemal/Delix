@@ -2,16 +2,13 @@
 
 import { motion, AnimatePresence } from "framer-motion";
 import {
-  AlertRegular,      AlertFilled,
-  ChatRegular,       ChatFilled,
-  PeopleTeamRegular, PeopleTeamFilled,
-  CalendarLtrRegular,CalendarLtrFilled,
-  CallRegular,       CallFilled,
-  DocumentRegular,   DocumentFilled,
-  AppsRegular,       AppsFilled,
-  MoreHorizontalRegular, MoreHorizontalFilled,
-  GridRegular,       GridFilled,
-  SettingsRegular,   SettingsFilled,
+  ChatRegular,            ChatFilled,
+  VideoRegular,           VideoFilled,
+  PeopleRegular,          PeopleFilled,
+  PeopleCommunityRegular, PeopleCommunityFilled,
+  CalendarLtrRegular,     CalendarLtrFilled,
+  AlertRegular,           AlertFilled,
+  SettingsRegular,        SettingsFilled,
 } from "@fluentui/react-icons";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
@@ -22,15 +19,12 @@ import { Zap } from "lucide-react";
 import type { FluentIcon } from "@fluentui/react-icons";
 
 const topNavItems: { icon: FluentIcon; iconFilled: FluentIcon; label: string; href: string; badge?: number }[] = [
-  { icon: AlertRegular,          iconFilled: AlertFilled,          label: "Activity",  href: "/dashboard/activity" },
-  { icon: ChatRegular,           iconFilled: ChatFilled,           label: "Chat",      href: "/dashboard/chat",  badge: 3 },
-  { icon: PeopleTeamRegular,     iconFilled: PeopleTeamFilled,     label: "Teams",     href: "/dashboard/teams" },
-  { icon: CalendarLtrRegular,    iconFilled: CalendarLtrFilled,    label: "Calendar",  href: "/dashboard/calendar" },
-  { icon: CallRegular,           iconFilled: CallFilled,           label: "Calls",     href: "/dashboard/calls" },
-  { icon: DocumentRegular,       iconFilled: DocumentFilled,       label: "Files",     href: "/dashboard/files" },
-  { icon: AppsRegular,           iconFilled: AppsFilled,           label: "Apps",      href: "/dashboard/apps" },
-  { icon: MoreHorizontalRegular, iconFilled: MoreHorizontalFilled, label: "More",      href: "/dashboard/more" },
-  { icon: GridRegular,           iconFilled: GridFilled,           label: "Store",     href: "/dashboard/store" },
+  { icon: ChatRegular,            iconFilled: ChatFilled,            label: "Chat",        href: "/dashboard/chat",        badge: 1 },
+  { icon: VideoRegular,           iconFilled: VideoFilled,           label: "Meet",        href: "/dashboard/meet" },
+  { icon: PeopleRegular,          iconFilled: PeopleFilled,          label: "People",      href: "/dashboard/people" },
+  { icon: PeopleCommunityRegular, iconFilled: PeopleCommunityFilled, label: "Communities", href: "/dashboard/communities" },
+  { icon: CalendarLtrRegular,     iconFilled: CalendarLtrFilled,     label: "Calendar",    href: "/dashboard/calendar" },
+  { icon: AlertRegular,           iconFilled: AlertFilled,           label: "Activity",    href: "/dashboard/activity" },
 ];
 
 const bottomNavItems: { icon: FluentIcon; iconFilled: FluentIcon; label: string; href: string }[] = [
@@ -55,14 +49,12 @@ function NavItem({
   active: boolean;
 }) {
   const IconComponent = active ? IconFilled : Icon;
+
   return (
     <Tooltip>
       <TooltipTrigger asChild>
-        <Link
-          href={href}
-          className="relative flex flex-col items-center justify-center w-full py-2.5 group"
-        >
-          {/* Active left border pill */}
+        <Link href={href} className="relative flex flex-col items-center justify-center w-full py-2.5 group">
+          {/* Active left border */}
           {active && (
             <motion.div
               layoutId="sidebar-indicator"
@@ -119,11 +111,11 @@ export function DashboardShell({ children }: { children: React.ReactNode }) {
     <TooltipProvider delayDuration={100}>
       <div className="flex h-screen bg-background overflow-hidden">
 
-        {/* ── Sidebar rail ── */}
+        {/* ── Sidebar ── */}
         <nav className="flex flex-col items-center w-[68px] bg-[#f3f3f3] dark:bg-zinc-900 border-r border-border shrink-0 py-2">
 
           {/* Logo */}
-          <Link href="/dashboard" className="flex items-center justify-center mb-3">
+          <Link href="/dashboard/chat" className="flex items-center justify-center mb-3">
             <div className="w-8 h-8 rounded-lg bg-primary flex items-center justify-center shadow-sm">
               <Zap className="w-4 h-4 text-primary-foreground" />
             </div>
@@ -147,7 +139,7 @@ export function DashboardShell({ children }: { children: React.ReactNode }) {
           </div>
         </nav>
 
-        {/* ── Main content with page transition ── */}
+        {/* ── Main content ── */}
         <AnimatePresence mode="wait">
           <motion.main
             key={pathname}

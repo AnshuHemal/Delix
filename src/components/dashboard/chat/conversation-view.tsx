@@ -105,7 +105,15 @@ function TimeLabel({ time, side }: { time: string; side: "left" | "right" }) {
   );
 }
 
-export function ConversationView({ chat }: { chat: Chat | null }) {
+export function ConversationView({
+  chat,
+  showSearch,
+  onToggleSearch,
+}: {
+  chat: Chat | null;
+  showSearch: boolean;
+  onToggleSearch: () => void;
+}) {
   const [activeTab, setActiveTab] = useState("Chat");
   const [input, setInput] = useState("");
   const [messages, setMessages] = useState<Message[]>(mockMessages);
@@ -167,12 +175,20 @@ export function ConversationView({ chat }: { chat: Chat | null }) {
       >
 
         {/* ── Top bar ── */}
-        <div className="flex items-center justify-between px-5 pt-2.5 pb-0 shrink-0 border-b border-border">
-          <div className="flex items-center gap-3">
-            <TopBarAvatar chat={chat} />
-            <div className="flex items-center gap-4">
-              <span className="text-sm font-semibold text-foreground whitespace-nowrap">{chat.name}</span>
-              <div className="flex items-center">
+        <div className="flex items-center justify-between px-5 shrink-0 border-b border-border min-h-[52px]">
+          <div className="flex items-center gap-3 self-stretch">
+            {/* Avatar centered vertically */}
+            <div className="flex items-center">
+              <TopBarAvatar chat={chat} />
+            </div>
+
+            {/* Name + tabs in one row, tabs pinned to bottom via self-end */}
+            <div className="flex items-center gap-4 self-stretch">
+              <span className="text-sm font-semibold text-foreground whitespace-nowrap">
+                {chat.name}
+              </span>
+
+              <div className="flex items-end self-stretch">
                 {tabs.map((tab) => (
                   <button key={tab} onClick={() => setActiveTab(tab)}
                     className={cn(
@@ -193,16 +209,21 @@ export function ConversationView({ chat }: { chat: Chat | null }) {
             </div>
           </div>
 
-          <div className="flex items-center gap-0.5 pb-2.5">
+          <div className="flex items-center gap-0.5 py-2.5">
             {[
-              { icon: Video, label: "Video call" },
-              { icon: Phone, label: "Audio call" },
-              { icon: Users, label: "Participants" },
-              { icon: Search, label: "Search" },
-              { icon: MoreHorizontal, label: "More" },
-            ].map(({ icon: Icon, label }) => (
-              <button key={label} title={label}
-                className="p-2 rounded-md hover:bg-muted transition-colors text-muted-foreground hover:text-foreground"
+              { icon: Video, label: "Video call", onClick: undefined },
+              { icon: Phone, label: "Audio call", onClick: undefined },
+              { icon: Users, label: "Participants", onClick: undefined },
+              { icon: Search, label: "Search", onClick: () => onToggleSearch() },
+              { icon: MoreHorizontal, label: "More", onClick: undefined },
+            ].map(({ icon: Icon, label, onClick }) => (
+              <button key={label} title={label} onClick={onClick}
+                className={cn(
+                  "p-2 rounded-md transition-colors",
+                  label === "Search" && showSearch
+                    ? "bg-primary/10 text-primary"
+                    : "hover:bg-muted text-muted-foreground hover:text-foreground"
+                )}
               >
                 <Icon size={18} />
               </button>

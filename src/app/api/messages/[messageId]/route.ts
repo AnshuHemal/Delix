@@ -6,6 +6,10 @@
 import { NextRequest, NextResponse } from "next/server";
 import { auth } from "@/lib/auth";
 import { editMessage, deleteMessage } from "@/lib/db";
+import {
+  publishMessageUpdated,
+  publishMessageDeleted,
+} from "@/lib/pusher/publish";
 import { headers } from "next/headers";
 import { z } from "zod";
 import { prisma } from "@/lib/prisma";
@@ -35,6 +39,21 @@ export async function PATCH(req: NextRequest, { params }: Params) {
   }
 
   const message = await editMessage(messageId, parsed.data.content);
+
+  // Determine context for the Pusher channel
+  const contextId = existing.channelId ?? existing.conversationId;
+  const contextType = existing.channelId ? "channel" : "conversation";
+
+  if (contextId) {
+    void publishMessageUpdated(
+      contextId,
+      contextType,
+      messageId,
+      parsed.data.content,
+      message.updatedAt
+    );
+  }
+
   return NextResponse.json({ message });
 }
 
@@ -51,5 +70,13 @@ export async function DELETE(_req: NextRequest, { params }: Params) {
   }
 
   await deleteMessage(messageId);
+
+  const contextId = existing.channelId ?? existing.conversationId;
+  const contextType = existing.channelId ? "channel" : "conversation";
+
+  if (contextId) {
+    void publishMessageDeleted(contextId, contextType, messageId);
+  }
+
   return NextResponse.json({ success: true });
 }

@@ -6,8 +6,10 @@
 import { NextRequest, NextResponse } from "next/server";
 import { auth } from "@/lib/auth";
 import { getPresenceForUsers, upsertPresence } from "@/lib/db";
+import { publishPresenceUpdated } from "@/lib/pusher/publish";
 import { headers } from "next/headers";
 import { z } from "zod";
+import { prisma } from "@/lib/prisma";
 
 const updateSchema = z.object({
   status: z.enum([
@@ -50,6 +52,18 @@ export async function PATCH(req: NextRequest) {
     session.user.id,
     parsed.data.status,
     parsed.data.customMessage
+  );
+
+  // Broadcast to all workspaces the user belongs to
+  const memberships = await prisma.workspaceMember.findMany({
+    where: { userId: session.user.id },
+    select: { workspaceId: true },
+  });
+
+  void Promise.all(
+    memberships.map((m) =>
+      publishPresenceUpdated(m.workspaceId, session.user.id, presence)
+    )
   );
 
   return NextResponse.json({ presence });

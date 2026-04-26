@@ -10,6 +10,8 @@ import {
   getUnreadNotificationCount,
   markAllNotificationsAsRead,
 } from "@/lib/db";
+import { pusherServer } from "@/lib/pusher/server";
+import { PusherChannels, PusherEvents } from "@/lib/pusher/events";
 import { headers } from "next/headers";
 
 export async function GET(req: NextRequest) {
@@ -39,5 +41,13 @@ export async function PATCH() {
   if (!session) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
 
   await markAllNotificationsAsRead(session.user.id);
+
+  // Notify other tabs/devices
+  void pusherServer.trigger(
+    PusherChannels.user(session.user.id),
+    PusherEvents.NOTIFICATION_ALL_READ,
+    { userId: session.user.id }
+  );
+
   return NextResponse.json({ success: true });
 }

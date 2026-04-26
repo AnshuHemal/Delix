@@ -10,6 +10,7 @@ import {
   AlertRegular,           AlertFilled,
   SettingsRegular,        SettingsFilled,
   DatabaseRegular,        DatabaseFilled,
+  WifiWarningRegular,     WifiWarningFilled,
 } from "@fluentui/react-icons";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
@@ -28,6 +29,7 @@ const topNavItems: { icon: FluentIcon; iconFilled: FluentIcon; label: string; hr
   { icon: CalendarLtrRegular,     iconFilled: CalendarLtrFilled,     label: "Calendar",    href: "/dashboard/calendar" },
   { icon: AlertRegular,           iconFilled: AlertFilled,           label: "Activity",    href: "/dashboard/activity" },
   { icon: DatabaseRegular,        iconFilled: DatabaseFilled,        label: "Schema",      href: "/dashboard/schema" },
+  { icon: WifiWarningRegular,     iconFilled: WifiWarningFilled,     label: "Realtime",    href: "/dashboard/realtime" },
 ];
 
 const bottomNavItems: { icon: FluentIcon; iconFilled: FluentIcon; label: string; href: string }[] = [

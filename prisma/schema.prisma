@@ -1,5 +1,10 @@
-// Prisma schema for Delix
-// Better Auth manages its own tables — generated via: npx auth@latest generate
+// ============================================================
+// Delix — Prisma Schema
+// ============================================================
+// Better Auth manages its own core tables (user, session,
+// account, verification). All app-level models live below.
+// Generated client output: ../src/generated/prisma
+// ============================================================
 
 generator client {
   provider = "prisma-client"
@@ -10,19 +15,140 @@ datasource db {
   provider = "postgresql"
 }
 
-// ─── Better Auth core tables ───────────────────────────────────────────────
+// ─────────────────────────────────────────────────────────────
+// ENUMS
+// ─────────────────────────────────────────────────────────────
+
+enum WorkspaceRole {
+  OWNER
+  ADMIN
+  MEMBER
+
+  @@map("workspace_role")
+}
+
+enum TeamRole {
+  OWNER
+  MEMBER
+
+  @@map("team_role")
+}
+
+enum ChannelType {
+  STANDARD
+  ANNOUNCEMENT
+  PRIVATE
+
+  @@map("channel_type")
+}
+
+enum ConversationType {
+  DIRECT
+  GROUP
+
+  @@map("conversation_type")
+}
+
+enum MeetingType {
+  SCHEDULED
+  INSTANT
+
+  @@map("meeting_type")
+}
+
+enum MeetingStatus {
+  SCHEDULED
+  ACTIVE
+  ENDED
+  CANCELLED
+
+  @@map("meeting_status")
+}
+
+enum MeetingParticipantRole {
+  HOST
+  PARTICIPANT
+
+  @@map("meeting_participant_role")
+}
+
+enum AttendeeStatus {
+  PENDING
+  ACCEPTED
+  DECLINED
+  TENTATIVE
+
+  @@map("attendee_status")
+}
+
+enum PresenceStatus {
+  AVAILABLE
+  BUSY
+  AWAY
+  DO_NOT_DISTURB
+  BE_RIGHT_BACK
+  OFFLINE
+
+  @@map("presence_status")
+}
+
+enum NotificationType {
+  MESSAGE
+  MENTION
+  REPLY
+  REACTION
+  MEETING_INVITE
+  MEETING_STARTING
+  TEAM_INVITE
+  CHANNEL_ADDED
+  SYSTEM
+
+  @@map("notification_type")
+}
+
+enum FileSource {
+  MESSAGE
+  CHANNEL
+  CONVERSATION
+
+  @@map("file_source")
+}
+
+// ─────────────────────────────────────────────────────────────
+// BETTER AUTH CORE TABLES
+// (Do not modify — managed by Better Auth)
+// ─────────────────────────────────────────────────────────────
 
 model User {
-  id            String    @id
+  id            String   @id
   name          String
-  email         String    @unique
-  emailVerified Boolean   @default(false)
+  email         String   @unique
+  emailVerified Boolean  @default(false)
   image         String?
-  createdAt     DateTime  @default(now())
-  updatedAt     DateTime  @updatedAt
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
 
-  sessions      Session[]
-  accounts      Account[]
+  // Better Auth relations
+  sessions Session[]
+  accounts Account[]
+
+  // App relations
+  workspaceMembers    WorkspaceMember[]
+  ownedWorkspaces     Workspace[]            @relation("WorkspaceOwner")
+  teamMembers         TeamMember[]
+  createdTeams        Team[]                 @relation("TeamCreator")
+  createdChannels     Channel[]              @relation("ChannelCreator")
+  channelMembers      ChannelMember[]
+  sentMessages        Message[]              @relation("MessageAuthor")
+  messageReactions    MessageReaction[]
+  conversationMembers ConversationMember[]
+  organizedMeetings   Meeting[]              @relation("MeetingOrganizer")
+  meetingParticipants MeetingParticipant[]
+  organizedEvents     CalendarEvent[]        @relation("EventOrganizer")
+  eventAttendees      CalendarEventAttendee[]
+  uploadedFiles       File[]
+  notifications       Notification[]
+  presence            UserPresence?
 
   @@map("user")
 }
@@ -36,8 +162,8 @@ model Session {
   ipAddress String?
   userAgent String?
 
-  userId    String
-  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  userId String
+  user   User   @relation(fields: [userId], references: [id], onDelete: Cascade)
 
   @@map("session")
 }
@@ -70,4 +196,358 @@ model Verification {
   updatedAt  DateTime? @updatedAt
 
   @@map("verification")
+}
+
+// ─────────────────────────────────────────────────────────────
+// WORKSPACE
+// ─────────────────────────────────────────────────────────────
+
+model Workspace {
+  id          String   @id @default(cuid())
+  name        String
+  slug        String   @unique
+  description String?
+  logo        String?
+  ownerId     String
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  owner   User              @relation("WorkspaceOwner", fields: [ownerId], references: [id], onDelete: Restrict)
+  members WorkspaceMember[]
+  teams   Team[]
+
+  @@index([slug])
+  @@map("workspace")
+}
+
+model WorkspaceMember {
+  id          String        @id @default(cuid())
+  workspaceId String
+  userId      String
+  role        WorkspaceRole @default(MEMBER)
+  joinedAt    DateTime      @default(now())
+
+  workspace Workspace @relation(fields: [workspaceId], references: [id], onDelete: Cascade)
+  user      User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([workspaceId, userId])
+  @@index([workspaceId])
+  @@index([userId])
+  @@map("workspace_member")
+}
+
+// ─────────────────────────────────────────────────────────────
+// TEAMS & CHANNELS
+// ─────────────────────────────────────────────────────────────
+
+model Team {
+  id          String   @id @default(cuid())
+  workspaceId String
+  name        String
+  description String?
+  avatar      String?
+  isPrivate   Boolean  @default(false)
+  createdById String
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  workspace  Workspace  @relation(fields: [workspaceId], references: [id], onDelete: Cascade)
+  createdBy  User       @relation("TeamCreator", fields: [createdById], references: [id], onDelete: Restrict)
+  members    TeamMember[]
+  channels   Channel[]
+
+  @@index([workspaceId])
+  @@map("team")
+}
+
+model TeamMember {
+  id       String   @id @default(cuid())
+  teamId   String
+  userId   String
+  role     TeamRole @default(MEMBER)
+  joinedAt DateTime @default(now())
+
+  team Team @relation(fields: [teamId], references: [id], onDelete: Cascade)
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([teamId, userId])
+  @@index([teamId])
+  @@index([userId])
+  @@map("team_member")
+}
+
+model Channel {
+  id          String      @id @default(cuid())
+  teamId      String
+  name        String
+  description String?
+  type        ChannelType @default(STANDARD)
+  createdById String
+  createdAt   DateTime    @default(now())
+  updatedAt   DateTime    @updatedAt
+
+  team      Team            @relation(fields: [teamId], references: [id], onDelete: Cascade)
+  createdBy User            @relation("ChannelCreator", fields: [createdById], references: [id], onDelete: Restrict)
+  members   ChannelMember[]
+  messages  Message[]
+  files     File[]
+
+  @@index([teamId])
+  @@map("channel")
+}
+
+model ChannelMember {
+  id        String   @id @default(cuid())
+  channelId String
+  userId    String
+  joinedAt  DateTime @default(now())
+
+  channel Channel @relation(fields: [channelId], references: [id], onDelete: Cascade)
+  user    User    @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([channelId, userId])
+  @@index([channelId])
+  @@map("channel_member")
+}
+
+// ─────────────────────────────────────────────────────────────
+// MESSAGING
+// ─────────────────────────────────────────────────────────────
+
+model Conversation {
+  id        String           @id @default(cuid())
+  type      ConversationType @default(DIRECT)
+  createdAt DateTime         @default(now())
+  updatedAt DateTime         @updatedAt
+
+  members  ConversationMember[]
+  messages Message[]
+  files    File[]
+
+  @@map("conversation")
+}
+
+model ConversationMember {
+  id             String    @id @default(cuid())
+  conversationId String
+  userId         String
+  lastReadAt     DateTime?
+  joinedAt       DateTime  @default(now())
+
+  conversation Conversation @relation(fields: [conversationId], references: [id], onDelete: Cascade)
+  user         User         @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([conversationId, userId])
+  @@index([conversationId])
+  @@index([userId])
+  @@map("conversation_member")
+}
+
+model Message {
+  id             String    @id @default(cuid())
+  content        String
+  authorId       String
+  channelId      String?
+  conversationId String?
+  parentId       String?   // for thread replies
+  isEdited       Boolean   @default(false)
+  isDeleted      Boolean   @default(false)
+  createdAt      DateTime  @default(now())
+  updatedAt      DateTime  @updatedAt
+
+  author       User                @relation("MessageAuthor", fields: [authorId], references: [id], onDelete: Restrict)
+  channel      Channel?            @relation(fields: [channelId], references: [id], onDelete: Cascade)
+  conversation Conversation?       @relation(fields: [conversationId], references: [id], onDelete: Cascade)
+  parent       Message?            @relation("MessageThread", fields: [parentId], references: [id], onDelete: SetNull)
+  replies      Message[]           @relation("MessageThread")
+  attachments  MessageAttachment[]
+  reactions    MessageReaction[]
+
+  @@index([channelId, createdAt])
+  @@index([conversationId, createdAt])
+  @@index([parentId])
+  @@index([authorId])
+  @@map("message")
+}
+
+model MessageAttachment {
+  id        String   @id @default(cuid())
+  messageId String
+  fileName  String
+  fileUrl   String
+  fileSize  Int      // bytes
+  mimeType  String
+  createdAt DateTime @default(now())
+
+  message Message @relation(fields: [messageId], references: [id], onDelete: Cascade)
+
+  @@index([messageId])
+  @@map("message_attachment")
+}
+
+model MessageReaction {
+  id        String   @id @default(cuid())
+  messageId String
+  userId    String
+  emoji     String
+  createdAt DateTime @default(now())
+
+  message Message @relation(fields: [messageId], references: [id], onDelete: Cascade)
+  user    User    @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([messageId, userId, emoji])
+  @@index([messageId])
+  @@map("message_reaction")
+}
+
+// ─────────────────────────────────────────────────────────────
+// MEETINGS
+// ─────────────────────────────────────────────────────────────
+
+model Meeting {
+  id          String        @id @default(cuid())
+  title       String
+  description String?
+  organizerId String
+  startTime   DateTime
+  endTime     DateTime?
+  meetingCode String        @unique
+  type        MeetingType   @default(SCHEDULED)
+  status      MeetingStatus @default(SCHEDULED)
+  createdAt   DateTime      @default(now())
+  updatedAt   DateTime      @updatedAt
+
+  organizer    User                 @relation("MeetingOrganizer", fields: [organizerId], references: [id], onDelete: Restrict)
+  participants MeetingParticipant[]
+  calendarEvent CalendarEvent?
+
+  @@index([organizerId])
+  @@index([meetingCode])
+  @@index([startTime])
+  @@map("meeting")
+}
+
+model MeetingParticipant {
+  id        String                 @id @default(cuid())
+  meetingId String
+  userId    String
+  role      MeetingParticipantRole @default(PARTICIPANT)
+  joinedAt  DateTime?
+  leftAt    DateTime?
+
+  meeting Meeting @relation(fields: [meetingId], references: [id], onDelete: Cascade)
+  user    User    @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([meetingId, userId])
+  @@index([meetingId])
+  @@map("meeting_participant")
+}
+
+// ─────────────────────────────────────────────────────────────
+// CALENDAR
+// ─────────────────────────────────────────────────────────────
+
+model CalendarEvent {
+  id          String    @id @default(cuid())
+  title       String
+  description String?
+  organizerId String
+  startTime   DateTime
+  endTime     DateTime
+  isAllDay    Boolean   @default(false)
+  recurrence  String?   // JSON string: { freq, interval, until, byDay }
+  color       String?   // hex color for the event block
+  meetingId   String?   @unique
+  createdAt   DateTime  @default(now())
+  updatedAt   DateTime  @updatedAt
+
+  organizer User                    @relation("EventOrganizer", fields: [organizerId], references: [id], onDelete: Restrict)
+  meeting   Meeting?                @relation(fields: [meetingId], references: [id], onDelete: SetNull)
+  attendees CalendarEventAttendee[]
+
+  @@index([organizerId, startTime])
+  @@index([startTime, endTime])
+  @@map("calendar_event")
+}
+
+model CalendarEventAttendee {
+  id      String         @id @default(cuid())
+  eventId String
+  userId  String
+  status  AttendeeStatus @default(PENDING)
+
+  event CalendarEvent @relation(fields: [eventId], references: [id], onDelete: Cascade)
+  user  User          @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([eventId, userId])
+  @@index([eventId])
+  @@index([userId])
+  @@map("calendar_event_attendee")
+}
+
+// ─────────────────────────────────────────────────────────────
+// FILES
+// ─────────────────────────────────────────────────────────────
+
+model File {
+  id             String     @id @default(cuid())
+  name           String
+  url            String
+  size           Int        // bytes
+  mimeType       String
+  source         FileSource
+  uploadedById   String
+  channelId      String?
+  conversationId String?
+  messageId      String?
+  createdAt      DateTime   @default(now())
+
+  uploadedBy   User          @relation(fields: [uploadedById], references: [id], onDelete: Restrict)
+  channel      Channel?      @relation(fields: [channelId], references: [id], onDelete: SetNull)
+  conversation Conversation? @relation(fields: [conversationId], references: [id], onDelete: SetNull)
+
+  @@index([uploadedById])
+  @@index([channelId])
+  @@index([conversationId])
+  @@map("file")
+}
+
+// ─────────────────────────────────────────────────────────────
+// NOTIFICATIONS
+// ─────────────────────────────────────────────────────────────
+
+model Notification {
+  id          String           @id @default(cuid())
+  userId      String
+  type        NotificationType
+  title       String
+  body        String?
+  isRead      Boolean          @default(false)
+  relatedId   String?          // polymorphic: messageId, meetingId, etc.
+  relatedType String?          // "message" | "meeting" | "team" | etc.
+  createdAt   DateTime         @default(now())
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId, isRead])
+  @@index([userId, createdAt])
+  @@map("notification")
+}
+
+// ─────────────────────────────────────────────────────────────
+// USER PRESENCE
+// ─────────────────────────────────────────────────────────────
+
+model UserPresence {
+  id            String         @id @default(cuid())
+  userId        String         @unique
+  status        PresenceStatus @default(OFFLINE)
+  customMessage String?
+  lastSeen      DateTime       @default(now())
+  updatedAt     DateTime       @updatedAt
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId])
+  @@map("user_presence")
 }

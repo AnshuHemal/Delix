@@ -5,8 +5,7 @@ import { motion, AnimatePresence } from "framer-motion";
 import { ChatList } from "./chat-list";
 import { ConversationView } from "./conversation-view";
 import { SearchDrawer } from "./search-drawer";
-
-type Chat = { id: string; name: string; [key: string]: unknown };
+import type { Chat } from "./types";
 
 const EASE: [number, number, number, number] = [0.22, 1, 0.36, 1];
 

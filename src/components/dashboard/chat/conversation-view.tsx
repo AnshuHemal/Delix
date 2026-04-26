@@ -28,7 +28,10 @@ type Chat = {
   avatar?: string;
   initials?: string;
   avatarColor?: string;
-  [key: string]: unknown;
+  preview?: string;
+  time?: string;
+  unread?: boolean;
+  isGroup?: boolean;
 };
 
 type Message = {

@@ -112,3 +112,11 @@ export const statusConfig: Record<
   Busy:      { label: "Busy",      dotClass: "bg-red-500" },
   Offline:   { label: "Offline",   dotClass: "bg-zinc-400" },
 };
+
+/** Tailwind class for the status dot — used by PeopleAvatar */
+export const statusColor: Record<ContactStatus, string> = {
+  Available: "bg-green-500",
+  Away:      "bg-yellow-400",
+  Busy:      "bg-red-500",
+  Offline:   "bg-zinc-400",
+};

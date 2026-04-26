@@ -9,6 +9,7 @@ import {
   CalendarLtrRegular,     CalendarLtrFilled,
   AlertRegular,           AlertFilled,
   SettingsRegular,        SettingsFilled,
+  DatabaseRegular,        DatabaseFilled,
 } from "@fluentui/react-icons";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
@@ -26,6 +27,7 @@ const topNavItems: { icon: FluentIcon; iconFilled: FluentIcon; label: string; hr
   { icon: PeopleCommunityRegular, iconFilled: PeopleCommunityFilled, label: "Communities", href: "/dashboard/communities" },
   { icon: CalendarLtrRegular,     iconFilled: CalendarLtrFilled,     label: "Calendar",    href: "/dashboard/calendar" },
   { icon: AlertRegular,           iconFilled: AlertFilled,           label: "Activity",    href: "/dashboard/activity" },
+  { icon: DatabaseRegular,        iconFilled: DatabaseFilled,        label: "Schema",      href: "/dashboard/schema" },
 ];
 
 const bottomNavItems: { icon: FluentIcon; iconFilled: FluentIcon; label: string; href: string }[] = [

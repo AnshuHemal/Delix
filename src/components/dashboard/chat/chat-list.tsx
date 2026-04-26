@@ -5,19 +5,7 @@ import Image from "next/image";
 import { motion, AnimatePresence } from "framer-motion";
 import { ChevronDown, SlidersHorizontal, SquarePen } from "lucide-react";
 import { cn } from "@/lib/utils";
-
-type Chat = {
-  id: string;
-  name: string;
-  preview: string;
-  time: string;
-  online: boolean;
-  unread: boolean;
-  avatar?: string;
-  initials?: string;
-  avatarColor?: string;
-  isGroup?: boolean;
-};
+import type { Chat } from "./types";
 
 const pinnedChats: Chat[] = [
   { id: "1", name: "Ray Tanaka", preview: "Louisa will send the initial list of...", time: "1:47 PM", online: true, unread: false, avatar: "https://randomuser.me/api/portraits/men/32.jpg" },

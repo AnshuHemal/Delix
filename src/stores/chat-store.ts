@@ -23,6 +23,14 @@ interface ChatState {
   activeConversationId: string | null;
   setActiveConversation: (id: string | null) => void;
 
+  // Active thread (message whose replies are shown in the Thread Panel)
+  activeThreadMessageId: string | null;
+  setActiveThreadMessage: (id: string | null) => void;
+
+  // Highlighted message (used by Search Drawer jump-to)
+  highlightedMessageId: string | null;
+  setHighlightedMessage: (id: string | null) => void;
+
   // Messages per conversation/channel
   messages: Record<string, MessageWithAuthor[]>;
   setMessages: (contextId: string, messages: MessageWithAuthor[]) => void;
@@ -30,6 +38,11 @@ interface ChatState {
   addMessage: (contextId: string, message: MessageWithAuthor) => void;
   updateMessage: (contextId: string, messageId: string, data: Partial<MessageWithAuthor>) => void;
   removeMessage: (contextId: string, messageId: string) => void;
+
+  // Thread messages (replies to the active thread)
+  threadMessages: MessageWithAuthor[];
+  setThreadMessages: (messages: MessageWithAuthor[]) => void;
+  addThreadMessage: (message: MessageWithAuthor) => void;
 
   // Pagination cursors
   cursors: Record<string, string | undefined>;
@@ -66,6 +79,12 @@ export const useChatStore = create<ChatState>()(
       activeConversationId: null,
       setActiveConversation: (id) => set({ activeConversationId: id }),
 
+      activeThreadMessageId: null,
+      setActiveThreadMessage: (id) => set({ activeThreadMessageId: id }),
+
+      highlightedMessageId: null,
+      setHighlightedMessage: (id) => set({ highlightedMessageId: id }),
+
       messages: {},
       setMessages: (contextId, messages) =>
         set((s) => ({ messages: { ...s.messages, [contextId]: messages } })),
@@ -101,6 +120,11 @@ export const useChatStore = create<ChatState>()(
             ),
           },
         })),
+
+      threadMessages: [],
+      setThreadMessages: (messages) => set({ threadMessages: messages }),
+      addThreadMessage: (message) =>
+        set((s) => ({ threadMessages: [...s.threadMessages, message] })),
 
       cursors: {},
       setCursor: (contextId, cursor) =>

@@ -333,6 +333,7 @@ model ConversationMember {
   userId         String
   lastReadAt     DateTime?
   joinedAt       DateTime  @default(now())
+  isPinned       Boolean   @default(false)
 
   conversation Conversation @relation(fields: [conversationId], references: [id], onDelete: Cascade)
   user         User         @relation(fields: [userId], references: [id], onDelete: Cascade)
@@ -352,6 +353,7 @@ model Message {
   parentId       String?   // for thread replies
   isEdited       Boolean   @default(false)
   isDeleted      Boolean   @default(false)
+  linkPreview    String?   // JSON: { title, description, image, domain }
   createdAt      DateTime  @default(now())
   updatedAt      DateTime  @updatedAt
 

@@ -4,20 +4,15 @@ import { useState, useRef, useEffect } from "react";
 import { motion } from "framer-motion";
 import { X, Search, Paperclip } from "lucide-react";
 import { cn } from "@/lib/utils";
-
-type Message = {
-  id: string;
-  text: string;
-  sent: boolean;
-  time: string;
-  senderName?: string;
-  isDateSeparator?: boolean;
-};
+import { useChatStore } from "@/stores/chat-store";
+import type { MessageWithAuthor } from "@/types/db";
+import { formatDistanceToNow, format } from "date-fns";
 
 type SearchDrawerProps = {
   open: boolean;
   onClose: () => void;
-  messages: Message[];
+  conversationId: string | null;
+  currentUserId: string;
 };
 
 const EASE: [number, number, number, number] = [0.22, 1, 0.36, 1];
@@ -66,10 +61,67 @@ function SearchIllustration() {
   );
 }
 
-export function SearchDrawer({ open, onClose, messages }: SearchDrawerProps) {
+export function SearchDrawer({ open, onClose, conversationId, currentUserId }: SearchDrawerProps) {
   const [query, setQuery] = useState("");
   const [hasAttachment, setHasAttachment] = useState(false);
+  const [results, setResults] = useState<MessageWithAuthor[]>([]);
+  const [isLoading, setIsLoading] = useState(false);
   const inputRef = useRef<HTMLInputElement>(null);
+  const setHighlightedMessage = useChatStore((s) => s.setHighlightedMessage);
+
+  // Debounced search effect
+  useEffect(() => {
+    const trimmedQuery = query.trim();
+    
+    // Don't search if query is less than 2 characters or no conversationId
+    if (!conversationId || trimmedQuery.length < 2) {
+      return;
+    }
+
+    setIsLoading(true);
+
+    // Debounce the API call by 300ms
+    const timeoutId = setTimeout(async () => {
+      try {
+        const params = new URLSearchParams({
+          search: trimmedQuery,
+        });
+        
+        if (hasAttachment) {
+          params.append("hasAttachment", "true");
+        }
+
+        const response = await fetch(
+          `/api/conversations/${conversationId}/messages?${params.toString()}`
+        );
+
+        if (!response.ok) {
+          throw new Error("Failed to search messages");
+        }
+
+        const data = await response.json();
+        setResults(data.messages || []);
+      } catch (error) {
+        console.error("Search error:", error);
+        setResults([]);
+      } finally {
+        setIsLoading(false);
+      }
+    }, 300);
+
+    return () => {
+      clearTimeout(timeoutId);
+      setIsLoading(false);
+    };
+  }, [query, hasAttachment, conversationId]);
+
+  // Reset results when query is too short or conversationId changes
+  useEffect(() => {
+    if (!conversationId || query.trim().length < 2) {
+      setResults([]);
+      setIsLoading(false);
+    }
+  }, [conversationId, query]);
 
   useEffect(() => {
     if (open) {
@@ -80,14 +132,26 @@ export function SearchDrawer({ open, onClose, messages }: SearchDrawerProps) {
   function handleClose() {
     setQuery("");
     setHasAttachment(false);
+    setResults([]);
     onClose();
   }
 
-  const results = query.trim()
-    ? messages.filter(
-        (m) => !m.isDateSeparator && m.text.toLowerCase().includes(query.toLowerCase())
-      )
-    : [];
+  function handleResultClick(messageId: string) {
+    setHighlightedMessage(messageId);
+    // Optionally close the drawer after clicking a result
+    // handleClose();
+  }
+
+  function formatMessageTime(date: Date | string) {
+    const messageDate = typeof date === "string" ? new Date(date) : date;
+    const now = new Date();
+    const diffInHours = (now.getTime() - messageDate.getTime()) / (1000 * 60 * 60);
+
+    if (diffInHours < 24) {
+      return formatDistanceToNow(messageDate, { addSuffix: true });
+    }
+    return format(messageDate, "MMM d");
+  }
 
   return (
     <div className="flex flex-col h-full w-full bg-background">
@@ -141,7 +205,7 @@ export function SearchDrawer({ open, onClose, messages }: SearchDrawerProps) {
 
           {/* Results / Empty state */}
           <div className="flex-1 overflow-y-auto">
-            {query.trim() === "" ? (
+            {query.trim().length < 2 ? (
               /* Empty state */
               <motion.div
                 initial={{ opacity: 0, y: 12 }}
@@ -157,6 +221,11 @@ export function SearchDrawer({ open, onClose, messages }: SearchDrawerProps) {
                   </p>
                 </div>
               </motion.div>
+            ) : isLoading ? (
+              <div className="flex flex-col items-center justify-center h-full gap-3 px-8 text-center pb-16">
+                <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary"></div>
+                <p className="text-xs text-muted-foreground">Searching...</p>
+              </div>
             ) : results.length === 0 ? (
               <div className="flex flex-col items-center justify-center h-full gap-3 px-8 text-center pb-16">
                 <p className="text-sm font-semibold text-foreground">No results found</p>
@@ -169,34 +238,42 @@ export function SearchDrawer({ open, onClose, messages }: SearchDrawerProps) {
                 <p className="text-xs text-muted-foreground px-1 py-2">
                   {results.length} result{results.length !== 1 ? "s" : ""}
                 </p>
-                {results.map((msg, i) => (
-                  <motion.div
-                    key={msg.id}
-                    initial={{ opacity: 0, y: 6 }}
-                    animate={{ opacity: 1, y: 0 }}
-                    transition={{ duration: 0.18, delay: i * 0.04, ease: EASE }}
-                    className="p-3 rounded-lg hover:bg-muted transition-colors cursor-pointer"
-                  >
-                    <div className="flex items-center justify-between mb-1">
-                      <span className="text-xs font-semibold text-foreground">
-                        {msg.sent ? "You" : (msg.senderName ?? "Them")}
-                      </span>
-                      <span className="text-xs text-muted-foreground">{msg.time}</span>
-                    </div>
-                    <p className="text-sm text-muted-foreground leading-relaxed">
-                      {/* Highlight matching text */}
-                      {msg.text.split(new RegExp(`(${query})`, "gi")).map((part, j) =>
-                        part.toLowerCase() === query.toLowerCase() ? (
-                          <mark key={j} className="bg-primary/20 text-primary rounded px-0.5">
-                            {part}
-                          </mark>
-                        ) : (
-                          part
-                        )
-                      )}
-                    </p>
-                  </motion.div>
-                ))}
+                {results.map((msg, i) => {
+                  const isOwnMessage = msg.authorId === currentUserId;
+                  const senderName = isOwnMessage ? "You" : msg.author.name;
+                  
+                  return (
+                    <motion.div
+                      key={msg.id}
+                      initial={{ opacity: 0, y: 6 }}
+                      animate={{ opacity: 1, y: 0 }}
+                      transition={{ duration: 0.18, delay: i * 0.04, ease: EASE }}
+                      onClick={() => handleResultClick(msg.id)}
+                      className="p-3 rounded-lg hover:bg-muted transition-colors cursor-pointer"
+                    >
+                      <div className="flex items-center justify-between mb-1">
+                        <span className="text-xs font-semibold text-foreground">
+                          {senderName}
+                        </span>
+                        <span className="text-xs text-muted-foreground">
+                          {formatMessageTime(msg.createdAt)}
+                        </span>
+                      </div>
+                      <p className="text-sm text-muted-foreground leading-relaxed">
+                        {/* Highlight matching text */}
+                        {msg.content.split(new RegExp(`(${query.trim()})`, "gi")).map((part, j) =>
+                          part.toLowerCase() === query.trim().toLowerCase() ? (
+                            <mark key={j} className="bg-primary/20 text-primary rounded px-0.5">
+                              {part}
+                            </mark>
+                          ) : (
+                            part
+                          )
+                        )}
+                      </p>
+                    </motion.div>
+                  );
+                })}
               </div>
             )}
           </div>

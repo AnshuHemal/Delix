@@ -49,12 +49,21 @@ export async function getChannelMessages(
 
 export async function getConversationMessages(
   conversationId: string,
-  options: { cursor?: string; limit?: number } = {}
+  options: { cursor?: string; limit?: number; search?: string; hasAttachment?: boolean } = {}
 ) {
   const limit = options.limit ?? MESSAGE_PAGE_SIZE;
 
   const messages = await prisma.message.findMany({
-    where: { conversationId, parentId: null },
+    where: {
+      conversationId,
+      parentId: null,
+      ...(options.search
+        ? { content: { contains: options.search, mode: "insensitive" } }
+        : {}),
+      ...(options.hasAttachment
+        ? { attachments: { some: {} } }
+        : {}),
+    },
     include: messageInclude,
     orderBy: { createdAt: "desc" },
     take: limit + 1,
@@ -136,7 +145,7 @@ export async function toggleReaction(messageId: string, userId: string, emoji: s
 // ─── Conversations ─────────────────────────────────────────────────────────
 
 export async function getConversationsForUser(userId: string) {
-  return prisma.conversation.findMany({
+  const conversations = await prisma.conversation.findMany({
     where: {
       members: { some: { userId } },
     },
@@ -153,6 +162,14 @@ export async function getConversationsForUser(userId: string) {
     },
     orderBy: { updatedAt: "desc" },
   });
+
+  return Promise.all(
+    conversations.map(async ({ messages, ...conversation }) => ({
+      ...conversation,
+      lastMessage: messages[0] ?? null,
+      unreadCount: await getUnreadCount(conversation.id, userId),
+    }))
+  );
 }
 
 export async function getOrCreateDirectConversation(userAId: string, userBId: string) {

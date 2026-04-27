@@ -7,6 +7,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { auth } from "@/lib/auth";
 import {
   getConversationMessages,
+  getThreadReplies,
   createMessage,
   markConversationAsRead,
 } from "@/lib/db";
@@ -18,9 +19,17 @@ import { headers } from "next/headers";
 import { z } from "zod";
 import { prisma } from "@/lib/prisma";
 
+const attachmentSchema = z.object({
+  fileName: z.string(),
+  fileUrl: z.string().url(),
+  fileSize: z.number().int().positive(),
+  mimeType: z.string(),
+});
+
 const sendSchema = z.object({
   content: z.string().min(1).max(10_000),
   parentId: z.string().optional(),
+  attachments: z.array(attachmentSchema).optional(),
 });
 
 type Params = { params: Promise<{ conversationId: string }> };
@@ -46,11 +55,25 @@ export async function GET(req: NextRequest, { params }: Params) {
   const { searchParams } = new URL(req.url);
   const cursor = searchParams.get("cursor") ?? undefined;
   const limit = Math.min(Number(searchParams.get("limit") ?? 50), 100);
+  const search = searchParams.get("search") ?? undefined;
+  const parentId = searchParams.get("parentId") ?? undefined;
+  const hasAttachment = searchParams.get("hasAttachment") === "true";
 
-  const result = await getConversationMessages(conversationId, { cursor, limit });
+  // Thread mode: return replies for a parent message instead of paginated messages
+  if (parentId) {
+    const replies = await getThreadReplies(parentId);
+    return NextResponse.json({ messages: replies, hasMore: false, nextCursor: undefined });
+  }
 
-  // Mark as read on first load (no cursor)
-  if (!cursor) {
+  const result = await getConversationMessages(conversationId, {
+    cursor,
+    limit,
+    search,
+    hasAttachment: hasAttachment || undefined,
+  });
+
+  // Mark as read on first load (no cursor, no search)
+  if (!cursor && !search) {
     await markConversationAsRead(conversationId, session.user.id);
   }
 
@@ -81,6 +104,13 @@ export async function POST(req: NextRequest, { params }: Params) {
     conversationId,
     parentId: parsed.data.parentId,
   });
+
+  // 1b. Persist attachments if provided
+  if (parsed.data.attachments && parsed.data.attachments.length > 0) {
+    await prisma.messageAttachment.createMany({
+      data: parsed.data.attachments.map((a) => ({ ...a, messageId: message.id })),
+    });
+  }
 
   // 2. Update conversation timestamp
   const now = new Date();

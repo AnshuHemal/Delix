@@ -282,6 +282,7 @@ export function ThreadPanel({ parentMessageId, conversationId }: ThreadPanelProp
       parentId: parentMessageId,
       isEdited: false,
       isDeleted: false,
+      isPinned: false,
       linkPreview: null,
       createdAt: new Date(),
       updatedAt: new Date(),

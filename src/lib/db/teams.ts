@@ -140,7 +140,7 @@ export async function createChannel(data: {
 
 export async function updateChannel(
   id: string,
-  data: Partial<{ name: string; description: string; type: ChannelType }>
+  data: Partial<{ name: string; description: string; type: ChannelType; topic: string; isArchived: boolean }>
 ) {
   return prisma.channel.update({ where: { id }, data });
 }

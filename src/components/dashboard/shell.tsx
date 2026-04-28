@@ -25,7 +25,7 @@ const topNavItems: { icon: FluentIcon; iconFilled: FluentIcon; label: string; hr
   { icon: ChatRegular,            iconFilled: ChatFilled,            label: "Chat",        href: "/dashboard/chat",        badge: 1 },
   { icon: VideoRegular,           iconFilled: VideoFilled,           label: "Meet",        href: "/dashboard/meet" },
   { icon: PeopleRegular,          iconFilled: PeopleFilled,          label: "People",      href: "/dashboard/people" },
-  { icon: PeopleCommunityRegular, iconFilled: PeopleCommunityFilled, label: "Communities", href: "/dashboard/communities" },
+  { icon: PeopleCommunityRegular, iconFilled: PeopleCommunityFilled, label: "Teams",       href: "/dashboard/communities" },
   { icon: CalendarLtrRegular,     iconFilled: CalendarLtrFilled,     label: "Calendar",    href: "/dashboard/calendar" },
   { icon: AlertRegular,           iconFilled: AlertFilled,           label: "Activity",    href: "/dashboard/activity" },
   { icon: DatabaseRegular,        iconFilled: DatabaseFilled,        label: "Schema",      href: "/dashboard/schema" },

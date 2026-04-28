@@ -1,5 +1,5 @@
-import { CommunitiesView } from "@/components/dashboard/communities/communities-view";
+import { TeamsView } from "@/components/dashboard/teams/teams-view";
 
 export default function CommunitiesPage() {
-  return <CommunitiesView />;
+  return <TeamsView />;
 }

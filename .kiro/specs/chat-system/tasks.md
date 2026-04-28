@@ -278,7 +278,7 @@ The codebase already has: Prisma models and DB helpers (`src/lib/db/messages.ts`
     - If the API returns an existing conversation (idempotent DM), navigate to it without creating a duplicate
     - _Requirements: 19.1, 19.2, 19.3, 19.4, 19.5_
 
-- [~] 12. Implement link previews
+- [ ] 12. Implement link previews
   - [x] 12.1 Create `src/app/api/messages/[messageId]/link-preview/route.ts`
     - `POST` handler: extract the first URL from the message content, fetch Open Graph metadata server-side (use `fetch` with a 3-second `AbortSignal.timeout`), parse `og:title`, `og:description`, `og:image`, and the domain
     - Store the result as a JSON string in a new `linkPreview String?` field on the `Message` model (add to schema and migrate)

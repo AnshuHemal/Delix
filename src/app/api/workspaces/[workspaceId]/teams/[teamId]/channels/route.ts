@@ -10,6 +10,13 @@ import { headers } from "next/headers";
 import { z } from "zod";
 import { prisma } from "@/lib/prisma";
 
+async function getTeamMemberRole(teamId: string, userId: string) {
+  const m = await prisma.teamMember.findUnique({
+    where: { teamId_userId: { teamId, userId } },
+  });
+  return m?.role ?? null;
+}
+
 const createSchema = z.object({
   name: z.string().min(1).max(80),
   description: z.string().max(300).optional(),
@@ -52,6 +59,12 @@ export async function POST(req: NextRequest, { params }: Params) {
 
   const wsMember = await getWorkspaceMember(workspaceId, session.user.id);
   if (!wsMember) return NextResponse.json({ error: "Forbidden" }, { status: 403 });
+
+  // Require Team Owner role to create channels (Requirement 16.6)
+  const teamRole = await getTeamMemberRole(teamId, session.user.id);
+  if (teamRole !== "OWNER") {
+    return NextResponse.json({ error: "Forbidden: Team Owner required" }, { status: 403 });
+  }
 
   const body = await req.json();
   const parsed = createSchema.safeParse(body);

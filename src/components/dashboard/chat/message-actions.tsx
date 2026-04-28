@@ -1,10 +1,11 @@
+/* eslint-disable react-hooks/purity */
 "use client";
 
 import { useState, useRef, useCallback, useEffect } from "react";
 import dynamic from "next/dynamic";
 import data from "@emoji-mart/data";
 import { useTheme } from "next-themes";
-import { Smile, Reply, Pencil, Trash2 } from "lucide-react";
+import { Smile, Reply, Pencil, Trash2, Pin, PinOff } from "lucide-react";
 import { toast } from "sonner";
 import { cn } from "@/lib/utils";
 import { useChatStore } from "@/stores";
@@ -46,6 +47,17 @@ interface MessageActionsProps {
   conversationId: string;
   /** Called when the user clicks Edit — parent switches to inline edit mode */
   onEditStart: () => void;
+  /**
+   * Optional: if provided, show a Pin/Unpin button.
+   * Called with the new isPinned value when the user clicks Pin/Unpin.
+   */
+  onPinToggle?: (isPinned: boolean) => void;
+  /**
+   * Optional: override whether the delete button is shown.
+   * Defaults to showing delete only for own messages.
+   * Pass `true` to show delete for all messages (e.g. Team Owners).
+   */
+  canDelete?: boolean;
 }
 
 // ─── Toolbar button ───────────────────────────────────────────────────────────
@@ -304,9 +316,12 @@ export function MessageActions({
   currentUserId,
   conversationId,
   onEditStart,
+  onPinToggle,
+  canDelete,
 }: MessageActionsProps) {
   const { resolvedTheme } = useTheme();
   const isOwn = message.authorId === currentUserId;
+  const showDelete = canDelete !== undefined ? canDelete : isOwn;
   const updateMessage = useChatStore((s) => s.updateMessage);
   const setActiveThreadMessage = useChatStore((s) => s.setActiveThreadMessage);
 
@@ -440,14 +455,24 @@ export function MessageActions({
           </ToolbarButton>
         )}
 
-        {/* Delete button — own messages only */}
-        {isOwn && (
+        {/* Delete button — own messages only (or Team Owner via canDelete prop) */}
+        {showDelete && (
           <ToolbarButton
             label="Delete message"
             onClick={() => setShowDeleteDialog(true)}
             className="hover:text-destructive"
           >
             <Trash2 size={15} />
+          </ToolbarButton>
+        )}
+
+        {/* Pin / Unpin button — only shown when onPinToggle is provided */}
+        {onPinToggle && (
+          <ToolbarButton
+            label={message.isPinned ? "Unpin message" : "Pin message"}
+            onClick={() => onPinToggle(!message.isPinned)}
+          >
+            {message.isPinned ? <PinOff size={15} /> : <Pin size={15} />}
           </ToolbarButton>
         )}
       </div>

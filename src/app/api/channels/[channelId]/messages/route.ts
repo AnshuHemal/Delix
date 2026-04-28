@@ -32,7 +32,6 @@ async function assertChannelAccess(channelId: string, userId: string) {
   if (channel.team.members.length === 0) return null;
   return channel;
 }
-
 export async function GET(req: NextRequest, { params }: Params) {
   const session = await auth.api.getSession({ headers: await headers() });
   if (!session) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
@@ -63,6 +62,17 @@ export async function POST(req: NextRequest, { params }: Params) {
   const parsed = sendSchema.safeParse(body);
   if (!parsed.success) {
     return NextResponse.json({ error: parsed.error.flatten() }, { status: 400 });
+  }
+
+  // ANNOUNCEMENT channels: only Team Owners may post (Requirement 16.8, 5.9)
+  if (channel.type === "ANNOUNCEMENT") {
+    const teamMember = channel.team.members[0]; // already filtered to current user
+    if (teamMember?.role !== "OWNER") {
+      return NextResponse.json(
+        { error: "Only team owners can post in announcement channels" },
+        { status: 403 }
+      );
+    }
   }
 
   // 1. Persist

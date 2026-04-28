@@ -1,11 +1,11 @@
 /**
- * PATCH  /api/messages/[messageId]  — edit a message
+ * PATCH  /api/messages/[messageId]  — edit a message (content or isPinned)
  * DELETE /api/messages/[messageId]  — soft-delete a message
  */
 
 import { NextRequest, NextResponse } from "next/server";
 import { auth } from "@/lib/auth";
-import { editMessage, deleteMessage } from "@/lib/db";
+import { deleteMessage } from "@/lib/db";
 import {
   publishMessageUpdated,
   publishMessageDeleted,
@@ -15,8 +15,18 @@ import { z } from "zod";
 import { prisma } from "@/lib/prisma";
 
 const editSchema = z.object({
-  content: z.string().min(1).max(10_000),
+  content: z.string().min(1).max(10_000).optional(),
+  isPinned: z.boolean().optional(),
 });
+
+const messageInclude = {
+  author: { include: { presence: true } },
+  attachments: true,
+  reactions: {
+    include: { user: { select: { id: true, name: true, image: true } } },
+  },
+  _count: { select: { replies: true } },
+} as const;
 
 type Params = { params: Promise<{ messageId: string }> };
 
@@ -28,28 +38,49 @@ export async function PATCH(req: NextRequest, { params }: Params) {
 
   const existing = await prisma.message.findUnique({ where: { id: messageId } });
   if (!existing) return NextResponse.json({ error: "Not found" }, { status: 404 });
-  if (existing.authorId !== session.user.id) {
-    return NextResponse.json({ error: "Forbidden" }, { status: 403 });
-  }
 
   const body = await req.json();
   const parsed = editSchema.safeParse(body);
   if (!parsed.success) {
-    return NextResponse.json({ error: parsed.error.flatten() }, { status: 400 });
+    return NextResponse.json({ error: "Invalid request body" }, { status: 400 });
   }
 
-  const message = await editMessage(messageId, parsed.data.content);
+  const { content, isPinned } = parsed.data;
 
-  // Determine context for the Pusher channel
+  if (content === undefined && isPinned === undefined) {
+    return NextResponse.json({ error: "At least one of content or isPinned must be provided" }, { status: 400 });
+  }
+
+  // For content edits, only the author can edit
+  if (content !== undefined && existing.authorId !== session.user.id) {
+    return NextResponse.json({ error: "Forbidden" }, { status: 403 });
+  }
+
+  const updateData: { content?: string; isEdited?: boolean; isPinned?: boolean } = {};
+  if (content !== undefined) {
+    updateData.content = content;
+    updateData.isEdited = true;
+  }
+  if (isPinned !== undefined) {
+    updateData.isPinned = isPinned;
+  }
+
+  const message = await prisma.message.update({
+    where: { id: messageId },
+    data: updateData,
+    include: messageInclude,
+  });
+
+  // Broadcast content edits via Pusher
   const contextId = existing.channelId ?? existing.conversationId;
   const contextType = existing.channelId ? "channel" : "conversation";
 
-  if (contextId) {
+  if (contextId && content !== undefined) {
     void publishMessageUpdated(
       contextId,
       contextType,
       messageId,
-      parsed.data.content,
+      content,
       message.updatedAt
     );
   }

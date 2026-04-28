@@ -281,7 +281,9 @@ model Channel {
   teamId      String
   name        String
   description String?
+  topic       String?
   type        ChannelType @default(STANDARD)
+  isArchived  Boolean     @default(false)
   createdById String
   createdAt   DateTime    @default(now())
   updatedAt   DateTime    @updatedAt
@@ -297,10 +299,11 @@ model Channel {
 }
 
 model ChannelMember {
-  id        String   @id @default(cuid())
-  channelId String
-  userId    String
-  joinedAt  DateTime @default(now())
+  id         String    @id @default(cuid())
+  channelId  String
+  userId     String
+  joinedAt   DateTime  @default(now())
+  lastReadAt DateTime?
 
   channel Channel @relation(fields: [channelId], references: [id], onDelete: Cascade)
   user    User    @relation(fields: [userId], references: [id], onDelete: Cascade)
@@ -353,6 +356,7 @@ model Message {
   parentId       String?   // for thread replies
   isEdited       Boolean   @default(false)
   isDeleted      Boolean   @default(false)
+  isPinned       Boolean   @default(false)
   linkPreview    String?   // JSON: { title, description, image, domain }
   createdAt      DateTime  @default(now())
   updatedAt      DateTime  @updatedAt

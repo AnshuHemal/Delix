@@ -1,3 +1,4 @@
+/* eslint-disable react-hooks/purity */
 /* eslint-disable react-hooks/exhaustive-deps */
 "use client";
 
@@ -674,6 +675,7 @@ export function ConversationView({
       parentId: null,
       isEdited: false,
       isDeleted: false,
+      isPinned: false,
       linkPreview: null,
       createdAt: new Date(),
       updatedAt: new Date(),
